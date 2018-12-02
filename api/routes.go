@@ -10,7 +10,11 @@ import (
 var contactHandler = handlers.GetContactHandlerInstance()
 
 var routes = map[string]map[string]gin.HandlerFunc{
+	"/contacts/:emailid": map[string]gin.HandlerFunc{
+		http.MethodGet:    contactHandler.Get,
+		http.MethodDelete: contactHandler.Delete,
+	},
 	"/contacts": map[string]gin.HandlerFunc{
-		http.MethodGet: contactHandler.Get,
+		http.MethodPost: contactHandler.Add,
 	},
 }

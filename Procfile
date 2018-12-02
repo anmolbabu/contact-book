@@ -1,1 +1,1 @@
-web: contact-book
+web: mkdir -p /tmp/plivo/contact-book;contact-book

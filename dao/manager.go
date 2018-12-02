@@ -10,8 +10,9 @@ import (
 
 type DataAccess interface {
 	GetAll() []models.Contact
-	Get(emailId string) models.Contact
-	Add(models.Contact) bool
+	Get(emailId string) (models.Contact, error)
+	Add(models.Contact) error
+	Delete(emailId string) error
 }
 
 var db DataAccess

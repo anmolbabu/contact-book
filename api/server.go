@@ -22,6 +22,10 @@ func NewRouter(config *config.Config) {
 			switch reqType {
 			case http.MethodGet:
 				router.GET(route, apiHandler)
+			case http.MethodPost:
+				router.POST(route, apiHandler)
+			case http.MethodDelete:
+				router.DELETE(route, apiHandler)
 			}
 		}
 	}
