@@ -30,6 +30,8 @@ func NewRouter(config *config.Config) {
 				authorized.POST(route, apiHandler)
 			case http.MethodDelete:
 				authorized.DELETE(route, apiHandler)
+			case http.MethodPut:
+				authorized.PUT(route, apiHandler)
 			}
 		}
 	}

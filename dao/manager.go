@@ -9,10 +9,11 @@ import (
 )
 
 type DataAccess interface {
-	GetAll() []models.Contact
+	GetAll(searchContact *models.Contact) ([]models.Contact, error)
 	Get(emailId string) (models.Contact, error)
 	Add(models.Contact) error
 	Delete(emailId string) error
+	Cleanup() error
 }
 
 var db DataAccess
@@ -30,4 +31,8 @@ func Init(config *config.Config) (DataAccess, error) {
 
 func GetDAOInstance() DataAccess {
 	return db
+}
+
+func Cleanup() error {
+	return db.Cleanup()
 }

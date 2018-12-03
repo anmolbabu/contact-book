@@ -15,11 +15,12 @@ func main() {
 
 	config := config.GetConfig()
 
-	_, err := dao.Init(config)
+	db, err := dao.Init(config)
 	if err != nil {
 		fmt.Printf("Failed to initialise db with config %+v. Error: %v\n", config, err)
 		os.Exit(1)
 	}
+	defer db.Cleanup()
 
 	api.NewRouter(config)
 

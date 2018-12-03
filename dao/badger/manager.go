@@ -2,7 +2,6 @@ package db
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/anmolbabu/contact-book/config"
@@ -32,6 +31,10 @@ func GetInstance(config *config.Config) (BadgerDB, error) {
 	return badgerDBConn, err
 }
 
+func (bdb BadgerDB) Cleanup() error {
+	return bdb.conn.Close()
+}
+
 func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 	contactJSON, err := json.Marshal(contact)
 	if err != nil {
@@ -47,8 +50,32 @@ func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 	return
 }
 
-func (bdb BadgerDB) GetAll() []models.Contact {
-	return []models.Contact{}
+func (bdb BadgerDB) GetAll(searchContact *models.Contact) (contacts []models.Contact, err error) {
+	bdb.conn.View(func(txn *badger.Txn) (err error) {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			var contact models.Contact
+			item := it.Item()
+			err = item.Value(func(val []byte) (err error) {
+				err = json.Unmarshal(val, &contact)
+				if err != nil {
+					return
+				}
+				return
+			})
+			if err != nil {
+				return
+			}
+			if contact.IsSearchMatch(searchContact) {
+				contacts = append(contacts, contact)
+			}
+		}
+		return
+	})
+	return
 }
 
 func (bdb BadgerDB) Delete(emailId string) (err error) {
@@ -67,7 +94,6 @@ func (bdb BadgerDB) Get(emailId string) (contact models.Contact, err error) {
 		}
 		err = item.Value(func(val []byte) error {
 			json.Unmarshal(val, &contact)
-			fmt.Println(contact)
 			return nil
 		})
 		return
