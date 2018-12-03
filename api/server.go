@@ -17,15 +17,19 @@ func NewRouter(config *config.Config) {
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	authorized := router.Group("/", gin.BasicAuth(gin.Accounts{
+		config.AuthUser: config.AuthPass,
+	}))
+
 	for route, apiHandlerMap := range routes {
 		for reqType, apiHandler := range apiHandlerMap {
 			switch reqType {
 			case http.MethodGet:
-				router.GET(route, apiHandler)
+				authorized.GET(route, apiHandler)
 			case http.MethodPost:
-				router.POST(route, apiHandler)
+				authorized.POST(route, apiHandler)
 			case http.MethodDelete:
-				router.DELETE(route, apiHandler)
+				authorized.DELETE(route, apiHandler)
 			}
 		}
 	}
