@@ -81,3 +81,7 @@ Body:
         "Name": "DEF"
     }
 ```
+
+## Running Tests
+
+To run tests, use `make test`

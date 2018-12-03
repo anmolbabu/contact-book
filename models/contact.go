@@ -24,3 +24,7 @@ func (c Contact) IsSearchMatch(searchPtr *Contact) bool {
 
 	return isMatch
 }
+
+func (c Contact) IsSame(c1 Contact) bool {
+	return (c.EmailID == c1.EmailID) && (c.Name == c1.Name)
+}

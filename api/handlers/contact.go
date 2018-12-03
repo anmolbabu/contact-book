@@ -35,7 +35,7 @@ func (ch ContactHandler) Get(c *gin.Context) {
 	}
 	c.JSON(
 		200,
-		gin.H{"contact": contact},
+		contact,
 	)
 	return
 }
@@ -59,7 +59,7 @@ func (ch ContactHandler) GetAll(c *gin.Context) {
 	}
 	c.JSON(
 		200,
-		gin.H{"contacts": contacts},
+		contacts,
 	)
 	return
 }

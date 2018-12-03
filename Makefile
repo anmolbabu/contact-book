@@ -45,13 +45,5 @@ endif
 	./contact-book
 
 .PHONY: test
-test:
-	go test -race $(PKGS)
-
-.PHONY: test-api-e2e
-test-api-e2e:
-ifdef TIMEOUT
-	go test -v github.com/anmolbabu/contact-book/e2e --ginkgo.focus="apie2e" -ginkgo.succinct -timeout $(TIMEOUT)
-else
-	go test -v github.com/anmolbabu/contact-book/e2e --ginkgo.focus="apie2e" -ginkgo.succinct
-endif
+test: install
+	go test -v $(PKGS)

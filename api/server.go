@@ -5,7 +5,6 @@ import (
 
 	"github.com/anmolbabu/contact-book/config"
 	"github.com/gin-gonic/gin"
-	//"github.com/vsouza/go-gin-boilerplate/middlewares"
 )
 
 type APIRequestHandler interface {
