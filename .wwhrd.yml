@@ -1,0 +1,18 @@
+---
+blacklist:
+  # https://www.apache.org/licenses/GPL-compatibility.html
+  - GPL-2.0
+
+whitelist:
+  - Apache-2.0
+  - MIT
+  - NewBSD
+  - FreeBSD
+  - ISC
+  - MPL-2.0
+
+exceptions:
+  - github.com/heroku/x/hmetrics
+  - github.com/AndreasBriese/bbloom
+  - github.com/mattn/go-colorable
+  - github.com/heroku/x/hmetrics/onload
