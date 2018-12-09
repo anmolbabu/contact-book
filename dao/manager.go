@@ -9,9 +9,11 @@ import (
 )
 
 type DataAccess interface {
-	GetAll(searchContact *models.Contact) ([]models.Contact, error)
+	GetAll(searchContact *models.Contact, pageNo int, pageLimit int) ([]models.Contact, error)
+	GetItemKey(emailID string) (key []byte, err error)
 	Get(emailId string) (models.Contact, error)
 	Add(models.Contact) error
+	Update(string, string) error
 	Delete(emailId string) error
 	Cleanup() error
 }

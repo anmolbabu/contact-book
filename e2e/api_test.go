@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 
 	"github.com/anmolbabu/contact-book/models"
+	"github.com/anmolbabu/contact-book/utils"
 
 	"time"
 )
@@ -36,11 +38,12 @@ func TestCreateContact(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		cmd, err := PrepTestSuite()
+		cmd, err, tConfDir := PrepTestSuite()
 		if err != nil {
 			t.Errorf("Error : %+v", err)
 			return
 		}
+		defer os.RemoveAll(tConfDir)
 		defer cmd.Process.Kill()
 
 		requestByte, err := json.Marshal(tt.contact)
@@ -104,7 +107,7 @@ func TestUpdateContact(t *testing.T) {
 				"Content-Type": "application/json",
 				"Accept":       "application/json",
 			},
-			update: map[string]string{"Name": "def"},
+			update: map[string]string{"name": "def"},
 			want: models.Contact{
 				Name:    "def",
 				EmailID: "abc@email.com",
@@ -133,11 +136,12 @@ func TestUpdateContact(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		cmd, err := PrepTestSuite()
+		cmd, err, tConfDir := PrepTestSuite()
 		if err != nil {
 			t.Errorf("Error : %+v", err)
 			return
 		}
+		defer os.RemoveAll(tConfDir)
 		defer cmd.Process.Kill()
 		requestByte, _ := json.Marshal(tt.update)
 		reqBody := bytes.NewReader(requestByte)
@@ -177,7 +181,7 @@ func TestUpdateContact(t *testing.T) {
 			return
 		}
 		if !got.IsSame(tt.want) {
-			t.Errorf("expected %+v, received %+v", tt.contact, got)
+			t.Errorf("expected %+v, received %+v", tt.want, got)
 			return
 		}
 	}
@@ -235,11 +239,12 @@ func TestListContact(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		cmd, err := PrepTestSuite()
+		cmd, err, tConfDir := PrepTestSuite()
 		if err != nil {
 			t.Errorf("Error : %+v", err)
 			return
 		}
+		defer os.RemoveAll(tConfDir)
 		defer cmd.Process.Kill()
 
 		err = tt.prep(tt.want)
@@ -340,11 +345,12 @@ func TestSearchContact(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		cmd, err := PrepTestSuite()
+		cmd, err, tConfDir := PrepTestSuite()
 		if err != nil {
 			t.Errorf("Error : %+v", err)
 			return
 		}
+		defer os.RemoveAll(tConfDir)
 		defer cmd.Process.Kill()
 
 		err = tt.prep(tt.contacts)
@@ -357,7 +363,7 @@ func TestSearchContact(t *testing.T) {
 		requestByte, _ := json.Marshal(tt.want)
 		reqBody := bytes.NewReader(requestByte)
 
-		getRes, err := HttpRequest(http.MethodGet, fmt.Sprintf("%s/contacts?Name=%s", BaseURL, tt.wantName), tt.headers, reqBody)
+		getRes, err := HttpRequest(http.MethodGet, fmt.Sprintf("%s/contacts?name=%s", BaseURL, tt.wantName), tt.headers, reqBody)
 		if err != nil {
 			t.Errorf("Error %+v", err)
 			return
@@ -421,11 +427,12 @@ func TestDeleteContact(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		cmd, err := PrepTestSuite()
+		cmd, err, tConfDir := PrepTestSuite()
 		if err != nil {
 			t.Errorf("Error : %+v", err)
 			return
 		}
+		defer os.RemoveAll(tConfDir)
 		defer cmd.Process.Kill()
 		requestByte, _ := json.Marshal(tt.update)
 		reqBody := bytes.NewReader(requestByte)
@@ -465,19 +472,24 @@ func TestDeleteContact(t *testing.T) {
 			return
 		}
 		if !got.IsSame(models.Contact{}) {
-			t.Errorf("expected %+v, received %+v", tt.contact, got)
+			t.Errorf("expected %+v, received %+v", models.Contact{}, got)
 			return
 		}
 	}
 }
 
-func PrepTestSuite() (*exec.Cmd, error) {
+func PrepTestSuite() (*exec.Cmd, error, string) {
+	tConfDir, err := ioutil.TempDir("", "trial-dir")
+	if err != nil {
+		return nil, err, utils.INVALID_STRING
+	}
+	os.Setenv("PLIVO_DB_DIR", tConfDir)
 	goPath := os.Getenv("GOPATH")
 	cmdStr := filepath.Join(goPath, "bin", "contact-book")
 
 	cmd := exec.Command(cmdStr)
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, err, utils.INVALID_STRING
 	}
 
 	go func() {
@@ -485,5 +497,5 @@ func PrepTestSuite() (*exec.Cmd, error) {
 	}()
 
 	time.Sleep(5 * time.Second)
-	return cmd, nil
+	return cmd, nil, tConfDir
 }

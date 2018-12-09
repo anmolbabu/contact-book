@@ -39,8 +39,8 @@ Headers:
     Accept: application/json
 Body:
     {
-        "Name": "def",
-        "EmailID": "def@email.com"
+        "name": "def",
+        "emailid": "def@email.com"
     }
 ```
 
@@ -56,7 +56,7 @@ Req Type: GET
 
 ```
 ex:
-URL: https://mysterious-springs-19562.herokuapp.com/contacts?Name=def&EmailID=def@email.com
+URL: https://mysterious-springs-19562.herokuapp.com/contacts?name=def&emailid=def@email.com
 Req Type: GET
 ```
 
@@ -78,10 +78,13 @@ Headers:
     Accept: application/json
 Body:
     {
-        "Name": "DEF"
+        "name": "DEF"
     }
 ```
-
+* Pagination
+```
+URL: http://127.0.0.1:8080/contacts?page=2&pagelimit=3&name=jkl
+```
 ## Running Tests
 
 To run tests, use `make test`

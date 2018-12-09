@@ -1,12 +1,23 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/anmolbabu/contact-book/utils"
+)
 
 // Contact is expected to hold contact details like name, emailid and timestamp at which the contact was created/modified
 type Contact struct {
-	Name      string    `json:"Name"`
-	EmailID   string    `json:"EmailID"`
-	UpdatedAt time.Time `json:"UpdatedAt"`
+	Name      string    `json:"name"`
+	EmailID   string    `json:"emailid"`
+	UpdatedAt time.Time `json:"updatedat"`
+}
+
+func GetDefaultContact() *Contact {
+	return &Contact{
+		Name:    utils.INVALID_STRING,
+		EmailID: utils.INVALID_STRING,
+	}
 }
 
 func (c Contact) IsSearchMatch(searchPtr *Contact) bool {
@@ -15,10 +26,10 @@ func (c Contact) IsSearchMatch(searchPtr *Contact) bool {
 		return isMatch
 	}
 
-	if searchPtr.Name != "" {
+	if searchPtr.Name != utils.INVALID_STRING {
 		isMatch = isMatch && (searchPtr.Name == c.Name)
 	}
-	if searchPtr.EmailID != "" {
+	if searchPtr.EmailID != utils.INVALID_STRING {
 		isMatch = isMatch && (searchPtr.EmailID == c.EmailID)
 	}
 

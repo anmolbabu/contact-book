@@ -1,11 +1,14 @@
-package db
+package badger
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/anmolbabu/contact-book/config"
 	"github.com/anmolbabu/contact-book/models"
+	"github.com/anmolbabu/contact-book/utils"
 	"github.com/dgraph-io/badger"
 )
 
@@ -35,14 +38,43 @@ func (bdb BadgerDB) Cleanup() error {
 	return bdb.conn.Close()
 }
 
+func (bdb BadgerDB) GetLastKey() (key int) {
+	key = 0
+	bdb.conn.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			var err error
+			key, err = strconv.Atoi(string(k))
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	return key
+}
+
 func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 	contactJSON, err := json.Marshal(contact)
 	if err != nil {
 		return err
 	}
+
+	id := bdb.GetLastKey()
+	var eligibleBadgerId []byte
+	eligibleBadgerId = []byte(strconv.Itoa(id + 1))
+
 	err = bdb.conn.Update(func(txn *badger.Txn) (err error) {
-		txn.Set(
-			[]byte(contact.EmailID),
+		err = txn.Set(
+			eligibleBadgerId,
 			contactJSON,
 		)
 		return
@@ -50,13 +82,58 @@ func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 	return
 }
 
-func (bdb BadgerDB) GetAll(searchContact *models.Contact) (contacts []models.Contact, err error) {
+func (bdb BadgerDB) Update(emailId string, name string) error {
+	key, err := bdb.GetItemKey(emailId)
+	if err != nil {
+		return err
+	}
+	foundContact, err := bdb.Get(emailId)
+	if err != nil {
+		return err
+	}
+	foundContact.Name = name
+	contactJSON, err := json.Marshal(foundContact)
+	if err != nil {
+		return err
+	}
+	err = bdb.conn.Update(func(txn *badger.Txn) (err error) {
+		err = txn.Set(
+			key,
+			contactJSON,
+		)
+		return err
+	})
+	return nil
+}
+
+func (bdb BadgerDB) GetAll(searchContact *models.Contact, pageNo int, pageLimit int) (contacts []models.Contact, err error) {
 	bdb.conn.View(func(txn *badger.Txn) (err error) {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchSize = 10
 		it := txn.NewIterator(opts)
 		defer it.Close()
+
+		currInd := 0
+		pageBeginInd := 0
+		pageEndInd := utils.INVALID_INDEX
+
+		if pageNo != utils.INVALID_INDEX {
+			pageBeginInd = pageLimit * (pageNo - 1)
+			pageEndInd = pageBeginInd + pageLimit
+		}
+
 		for it.Rewind(); it.Valid(); it.Next() {
+			for currInd < pageBeginInd {
+				currInd++
+				if it.Valid() {
+					it.Next()
+				} else {
+					return nil
+				}
+			}
+			if !it.Valid() {
+				return fmt.Errorf("Not Available")
+			}
 			var contact models.Contact
 			item := it.Item()
 			err = item.Value(func(val []byte) (err error) {
@@ -72,23 +149,75 @@ func (bdb BadgerDB) GetAll(searchContact *models.Contact) (contacts []models.Con
 			if contact.IsSearchMatch(searchContact) {
 				contacts = append(contacts, contact)
 			}
+			if pageEndInd != utils.INVALID_INDEX {
+				if currInd == pageEndInd-1 {
+					break
+				}
+			}
+			currInd++
 		}
 		return
 	})
 	return
 }
 
+func (bdb BadgerDB) GetItemKey(emailID string) (key []byte, err error) {
+	err = bdb.conn.View(func(txn *badger.Txn) (err error) {
+		opts := badger.DefaultIteratorOptions
+
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		var contact models.Contact
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			tKey := item.Key()
+			err = item.Value(func(val []byte) (err error) {
+				err = json.Unmarshal(val, &contact)
+				if err != nil {
+					return
+				}
+				defContact := models.GetDefaultContact()
+				defContact.EmailID = emailID
+				if contact.IsSearchMatch(defContact) {
+					key = tKey
+					return
+				}
+				return
+			})
+
+			if len(key) > 0 {
+				break
+			}
+		}
+		return
+	})
+	if len(key) == 0 {
+		return key, fmt.Errorf("Contact with emailId %s not found", emailID)
+	}
+	return
+}
+
 func (bdb BadgerDB) Delete(emailId string) (err error) {
+	key, err := bdb.GetItemKey(emailId)
+	if err != nil {
+		return
+	}
 	err = bdb.conn.Update(func(txn *badger.Txn) (err error) {
-		err = txn.Delete([]byte(emailId))
+		err = txn.Delete(key)
 		return
 	})
 	return
 }
 
 func (bdb BadgerDB) Get(emailId string) (contact models.Contact, err error) {
+	key, err := bdb.GetItemKey(emailId)
+	if err != nil {
+		return
+	}
 	err = bdb.conn.View(func(txn *badger.Txn) (err error) {
-		item, err := txn.Get([]byte(emailId))
+		item, err := txn.Get(key)
 		if err != nil {
 			return
 		}

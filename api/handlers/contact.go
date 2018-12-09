@@ -42,14 +42,18 @@ func (ch ContactHandler) Get(c *gin.Context) {
 
 func (ch ContactHandler) GetAll(c *gin.Context) {
 	daoInstance := dao.GetDAOInstance()
-	contact := models.Contact{}
-	contactPtr := &contact
 
-	err := c.Bind(&contact)
+	lr := GetDefaultListReq()
+	lr, err := lr.Serialise(c.Request.URL.Query())
 	if err != nil {
-		contactPtr = nil
+		c.JSON(
+			500,
+			gin.H{"error": err.Error()},
+		)
+		return
 	}
-	contacts, err := daoInstance.GetAll(contactPtr)
+
+	contacts, err := daoInstance.GetAll(&(lr.Contact), lr.PageNo, lr.PageLimit)
 	if err != nil {
 		c.JSON(
 			500,
@@ -102,38 +106,22 @@ func (ch ContactHandler) Update(c *gin.Context) {
 		)
 		return
 	}
+	if contact.EmailID != "" {
+		c.JSON(
+			500,
+			gin.H{"error": "updating emailid is not supported"},
+		)
+		return
+	}
 
 	contact.UpdatedAt = time.Now()
 
-	if contact.EmailID == "" {
-		contact.EmailID = emailId
-	} else {
-		if emailId != contact.EmailID {
-			c.JSON(
-				500,
-				gin.H{"error": "email ids in the request body and url param are different"},
-			)
-			return
-		}
-	}
-
-	oldContact, err := daoInstance.Get(emailId)
+	err = daoInstance.Update(emailId, contact.Name)
 	if err != nil {
 		c.JSON(
 			500,
-			gin.H{"error": fmt.Sprintf("failed fetching contact with email id %s", emailId)},
+			gin.H{"error": fmt.Sprintf("failed updating contact with email: %s. Error %+v", emailId, err)},
 		)
-		return
-	}
-	contact = SuperImposeContacts(contact, oldContact)
-
-	err = daoInstance.Add(contact)
-	if err != nil {
-		c.JSON(
-			500,
-			gin.H{"error": err.Error()},
-		)
-		return
 	}
 	c.JSON(
 		200,
