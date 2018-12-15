@@ -2,11 +2,15 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 
+	"github.com/anmolbabu/contact-book/cb_errors"
+	"github.com/anmolbabu/contact-book/dao"
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/anmolbabu/contact-book/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ListReq struct {
@@ -56,4 +60,50 @@ func (lr ListReq) Serialise(params url.Values) (ListReq, error) {
 		lr.PageLimit = utils.DEFAULT_PAGE_LIMIT
 	}
 	return lr, nil
+}
+
+func validateSearch(c *gin.Context) (httpStatusCode int, lr ListReq, err error) {
+	lr = GetDefaultListReq()
+	lr, err = lr.Serialise(c.Request.URL.Query())
+	if err != nil {
+		return http.StatusBadRequest, lr, err
+	}
+	return http.StatusAccepted, lr, err
+}
+
+func (ch ContactHandler) GetAll(c *gin.Context) {
+	daoInstance := dao.GetDAOInstance()
+
+	httpStatusCode, lr, err := validateSearch(c)
+	if err != nil {
+		c.JSON(
+			httpStatusCode,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	contacts, err := daoInstance.GetAll(&(lr.Contact), lr.PageNo, lr.PageLimit)
+	if err != nil {
+		if err == cb_errors.CONTACT_NOT_FOUND {
+			c.JSON(
+				http.StatusNotFound,
+				gin.H{"error": "No contacts available"},
+			)
+			return
+		} else {
+			c.JSON(
+				500,
+				gin.H{"error": err.Error()},
+			)
+			return
+		}
+	}
+
+	tcs := ToContactResps(contacts)
+	c.JSON(
+		http.StatusOK,
+		tcs,
+	)
+	return
 }

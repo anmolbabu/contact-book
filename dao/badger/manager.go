@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
+	"github.com/anmolbabu/contact-book/cb_errors"
 	"github.com/anmolbabu/contact-book/config"
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/anmolbabu/contact-book/utils"
@@ -82,7 +84,7 @@ func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 	return
 }
 
-func (bdb BadgerDB) Update(emailId string, name string) error {
+func (bdb BadgerDB) Update(emailId string, newName string, newEmailId string) error {
 	key, err := bdb.GetItemKey(emailId)
 	if err != nil {
 		return err
@@ -91,11 +93,21 @@ func (bdb BadgerDB) Update(emailId string, name string) error {
 	if err != nil {
 		return err
 	}
-	foundContact.Name = name
+
+	if newName != "" {
+		foundContact.Name = newName
+	}
+
+	if newEmailId != "" {
+		foundContact.EmailID = newEmailId
+	}
+
+	foundContact.UpdatedAt = time.Now()
 	contactJSON, err := json.Marshal(foundContact)
 	if err != nil {
 		return err
 	}
+
 	err = bdb.conn.Update(func(txn *badger.Txn) (err error) {
 		err = txn.Set(
 			key,
@@ -158,6 +170,9 @@ func (bdb BadgerDB) GetAll(searchContact *models.Contact, pageNo int, pageLimit 
 		}
 		return
 	})
+	if len(contacts) == 0 {
+		err = cb_errors.CONTACT_NOT_FOUND
+	}
 	return
 }
 
@@ -194,7 +209,7 @@ func (bdb BadgerDB) GetItemKey(emailID string) (key []byte, err error) {
 		return
 	})
 	if len(key) == 0 {
-		return key, fmt.Errorf("Contact with emailId %s not found", emailID)
+		return key, cb_errors.CONTACT_NOT_FOUND
 	}
 	return
 }
@@ -227,5 +242,8 @@ func (bdb BadgerDB) Get(emailId string) (contact models.Contact, err error) {
 		})
 		return
 	})
+	if contact.IsEmpty() {
+		err = cb_errors.CONTACT_NOT_FOUND
+	}
 	return
 }

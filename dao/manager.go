@@ -13,7 +13,7 @@ type DataAccess interface {
 	GetItemKey(emailID string) (key []byte, err error)
 	Get(emailId string) (models.Contact, error)
 	Add(models.Contact) error
-	Update(string, string) error
+	Update(string, string, string) error
 	Delete(emailId string) error
 	Cleanup() error
 }

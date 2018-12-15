@@ -39,3 +39,7 @@ func (c Contact) IsSearchMatch(searchPtr *Contact) bool {
 func (c Contact) IsSame(c1 Contact) bool {
 	return (c.EmailID == c1.EmailID) && (c.Name == c1.Name)
 }
+
+func (c Contact) IsEmpty() bool {
+	return c.Name == "" && c.EmailID == ""
+}
