@@ -85,6 +85,20 @@ Body:
 ```
 URL: http://127.0.0.1:8080/contacts?page=2&pagelimit=3&name=jkl
 ```
+
+Note:
+
+Basic authentication is in use and uses ENV names `PLIVO_AUTH_USER` and `PLIVO_AUTH_PASS` for user id and password respectively
+
+```
+Defaults:
+    User name: `heroku`
+    Password: `plivo`
+```
+
+Sample request with auth header:
+curl --user heroku:plivo https://vast-scrubland-53840.herokuapp.com/contacts
+
 ## Running Tests
 
 To run tests, use `make test`
