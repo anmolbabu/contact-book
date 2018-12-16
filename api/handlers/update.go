@@ -6,13 +6,11 @@ import (
 	"regexp"
 
 	"github.com/anmolbabu/contact-book/cb_errors"
-	"github.com/anmolbabu/contact-book/dao"
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/gin-gonic/gin"
 )
 
 func validateUpdate(c *gin.Context) (httpStatusCode int, contact models.Contact, emailId string, err error) {
-	daoInstance := dao.GetDAOInstance()
 
 	emailId = c.Param("emailid")
 	fmt.Println(emailId)
@@ -30,19 +28,10 @@ func validateUpdate(c *gin.Context) (httpStatusCode int, contact models.Contact,
 		return http.StatusBadRequest, contact, emailId, fmt.Errorf("invalid emailid")
 	}
 
-	_, err = daoInstance.Get(emailId)
-	if err != nil {
-		if err == cb_errors.CONTACT_NOT_FOUND {
-			return http.StatusNotFound, contact, emailId, fmt.Errorf("failed to update the contact with email id %s. Error: %s", emailId, err.Error())
-		}
-		return http.StatusInternalServerError, contact, emailId, fmt.Errorf("failed to update the contact with email id %s. Error %s", emailId, err.Error())
-	}
-
 	return http.StatusAccepted, contact, emailId, nil
 }
 
 func (ch ContactHandler) Update(c *gin.Context) {
-	daoInstance := dao.GetDAOInstance()
 
 	httpStatusCode, contact, emailId, err := validateUpdate(c)
 
@@ -54,8 +43,15 @@ func (ch ContactHandler) Update(c *gin.Context) {
 		return
 	}
 
-	err = daoInstance.Update(emailId, contact.Name, contact.EmailID)
+	err = ch.daoInstance.Update(emailId, contact.Name, contact.EmailID)
 	if err != nil {
+		if err == cb_errors.CONTACT_NOT_FOUND {
+			c.JSON(
+				http.StatusNotFound,
+				gin.H{"error": fmt.Sprintf("failed to update the contact with email id %s. Error: %s", emailId, err.Error())},
+			)
+			return
+		}
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": fmt.Sprintf("failed updating contact with email: %s. Error %+v", contact.EmailID, err)},

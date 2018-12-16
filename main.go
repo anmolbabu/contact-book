@@ -22,6 +22,6 @@ func main() {
 	}
 	defer db.Cleanup()
 
-	api.NewRouter(config)
+	api.NewRouter(config, db)
 
 }

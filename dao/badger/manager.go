@@ -70,6 +70,14 @@ func (bdb BadgerDB) Add(contact models.Contact) (err error) {
 		return err
 	}
 
+	_, err = bdb.GetItemKey(contact.EmailID)
+	if err == nil {
+		return cb_errors.DUPLICATE_CONTACT
+	}
+	if err != cb_errors.CONTACT_NOT_FOUND {
+		return err
+	}
+
 	id := bdb.GetLastKey()
 	var eligibleBadgerId []byte
 	eligibleBadgerId = []byte(strconv.Itoa(id + 1))

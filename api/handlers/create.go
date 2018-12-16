@@ -6,15 +6,13 @@ import (
 	"regexp"
 	"time"
 
-	api_models "github.com/anmolbabu/contact-book/api/models"
-	"github.com/anmolbabu/contact-book/dao"
+	"github.com/anmolbabu/contact-book/cb_errors"
+
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/gin-gonic/gin"
 )
 
 func validateCreate(c *gin.Context) (httpStatusCode int, contact models.Contact, err error) {
-	daoInstance := dao.GetDAOInstance()
-
 	err = c.BindJSON(&contact)
 	if err != nil {
 		return http.StatusBadRequest, contact, fmt.Errorf("invalid parameter passed")
@@ -28,17 +26,10 @@ func validateCreate(c *gin.Context) (httpStatusCode int, contact models.Contact,
 		return http.StatusBadRequest, contact, fmt.Errorf("invalid emailid")
 	}
 
-	var fetchedContact models.Contact
-	fetchedContact, err = daoInstance.Get(contact.EmailID)
-	if err == nil {
-		return http.StatusConflict, fetchedContact, fmt.Errorf("failed to create %+v as %+v already exists", api_models.ToContactResp(contact), api_models.ToContactResp(fetchedContact))
-	}
-
 	return http.StatusAccepted, contact, nil
 }
 
 func (ch ContactHandler) Add(c *gin.Context) {
-	daoInstance := dao.GetDAOInstance()
 	httpStatusCode, contact, err := validateCreate(c)
 	if err != nil {
 		c.JSON(
@@ -48,16 +39,22 @@ func (ch ContactHandler) Add(c *gin.Context) {
 		return
 	}
 	contact.UpdatedAt = time.Now()
-	err = daoInstance.Add(contact)
+	err = ch.daoInstance.Add(contact)
 	if err != nil {
+		if err == cb_errors.DUPLICATE_CONTACT {
+			c.JSON(
+				http.StatusConflict,
+				gin.H{"error": err.Error()},
+			)
+		}
 		c.JSON(
-			500,
+			http.StatusInternalServerError,
 			gin.H{"error": err.Error()},
 		)
 		return
 	}
 	c.JSON(
-		200,
+		http.StatusCreated,
 		gin.H{"Status": "Success"},
 	)
 	return

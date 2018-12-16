@@ -3,6 +3,9 @@ package api
 import (
 	"net/http"
 
+	"github.com/anmolbabu/contact-book/api/handlers"
+	"github.com/anmolbabu/contact-book/dao"
+
 	"github.com/anmolbabu/contact-book/config"
 	"github.com/gin-gonic/gin"
 )
@@ -11,16 +14,17 @@ type APIRequestHandler interface {
 	Get(c *gin.Context)
 }
 
-func NewRouter(config *config.Config) {
+func NewRouter(config *config.Config, dao dao.DataAccess) {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 
+	handler := handlers.Init(dao)
 	authorized := router.Group("/", gin.BasicAuth(gin.Accounts{
 		config.AuthUser: config.AuthPass,
 	}))
 
-	for route, apiHandlerMap := range routes {
+	for route, apiHandlerMap := range getRouter(*handler) {
 		for reqType, apiHandler := range apiHandlerMap {
 			switch reqType {
 			case http.MethodGet:
@@ -34,5 +38,6 @@ func NewRouter(config *config.Config) {
 			}
 		}
 	}
+
 	router.Run(":" + config.Port)
 }

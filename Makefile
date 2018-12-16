@@ -46,4 +46,4 @@ endif
 
 .PHONY: test
 test: install
-	go test -v $(PKGS)
+	go test -race $(PKGS)

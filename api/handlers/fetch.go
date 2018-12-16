@@ -1,39 +1,35 @@
 package handlers
 
 import (
-	"sync"
+	"fmt"
+	"net/http"
+
+	"github.com/anmolbabu/contact-book/cb_errors"
 
 	"github.com/anmolbabu/contact-book/api/models"
-	"github.com/anmolbabu/contact-book/dao"
 	"github.com/gin-gonic/gin"
 )
 
-type ContactHandler struct{}
-
-var contactHandler *ContactHandler
-var once sync.Once
-
-func GetContactHandlerInstance() *ContactHandler {
-	once.Do(func() {
-		contactHandler = &ContactHandler{}
-	})
-	return contactHandler
-}
-
 func (ch ContactHandler) Get(c *gin.Context) {
-	daoInstance := dao.GetDAOInstance()
 	emailId := c.Param("emailid")
-	contact, err := daoInstance.Get(emailId)
+	contact, err := ch.daoInstance.Get(emailId)
 	if err != nil {
+		if err == cb_errors.CONTACT_NOT_FOUND {
+			c.JSON(
+				http.StatusNotFound,
+				gin.H{"error": fmt.Sprintf("requested contact with email id %s does not exist. Error: %+v", emailId, err)},
+			)
+			return
+		}
 		c.JSON(
-			500,
+			http.StatusInternalServerError,
 			gin.H{"error": err.Error()},
 		)
 		return
 	}
 
 	c.JSON(
-		200,
+		http.StatusOK,
 		models.ToContactResp(contact),
 	)
 	return

@@ -13,7 +13,7 @@ const (
 	Password = "plivo"
 )
 
-func basicAuth(username, password string) string {
+func BasicAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
@@ -28,7 +28,7 @@ func HttpRequest(reqType string, url string, headers map[string]string, body io.
 		return
 	}
 
-	req.Header.Add("Authorization", "Basic "+basicAuth(UserName, Password))
+	req.Header.Add("Authorization", "Basic "+BasicAuth(UserName, Password))
 	for key, val := range headers {
 		req.Header.Add(key, val)
 	}

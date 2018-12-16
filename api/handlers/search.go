@@ -8,7 +8,6 @@ import (
 
 	api_models "github.com/anmolbabu/contact-book/api/models"
 	"github.com/anmolbabu/contact-book/cb_errors"
-	"github.com/anmolbabu/contact-book/dao"
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/anmolbabu/contact-book/utils"
 	"github.com/gin-gonic/gin"
@@ -69,11 +68,16 @@ func validateSearch(c *gin.Context) (httpStatusCode int, lr ListReq, err error) 
 	if err != nil {
 		return http.StatusBadRequest, lr, err
 	}
+	if lr.PageLimit != utils.INVALID_INDEX && lr.PageLimit < 1 {
+		return http.StatusBadRequest, lr, fmt.Errorf("pagelimit should be >= 1")
+	}
+	if lr.PageNo != utils.INVALID_INDEX && lr.PageNo < 1 {
+		return http.StatusBadRequest, lr, fmt.Errorf("pageno should be >= 1")
+	}
 	return http.StatusAccepted, lr, err
 }
 
 func (ch ContactHandler) GetAll(c *gin.Context) {
-	daoInstance := dao.GetDAOInstance()
 
 	httpStatusCode, lr, err := validateSearch(c)
 	if err != nil {
@@ -84,7 +88,7 @@ func (ch ContactHandler) GetAll(c *gin.Context) {
 		return
 	}
 
-	contacts, err := daoInstance.GetAll(&(lr.Contact), lr.PageNo, lr.PageLimit)
+	contacts, err := ch.daoInstance.GetAll(&(lr.Contact), lr.PageNo, lr.PageLimit)
 	if err != nil {
 		if err == cb_errors.CONTACT_NOT_FOUND {
 			c.JSON(

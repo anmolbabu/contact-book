@@ -18,23 +18,31 @@ type DataAccess interface {
 	Cleanup() error
 }
 
-var db DataAccess
+type DataAccessLayer struct {
+	db DataAccess
+}
+
+var dataAccessManager DataAccessLayer
 
 func Init(config *config.Config) (DataAccess, error) {
 	var err error
 	switch config.DB {
 	case badger_db.DB_NAME:
-		db, err = badger_db.GetInstance(config)
-		return db, err
+		dataAccessManager.db, err = badger_db.GetInstance(config)
+		return dataAccessManager.db, err
 	default:
-		return db, fmt.Errorf("failed to initialise db")
+		return dataAccessManager.db, fmt.Errorf("failed to initialise db")
 	}
 }
 
+func SetDAO(dao DataAccess) {
+	dataAccessManager.db = dao
+}
+
 func GetDAOInstance() DataAccess {
-	return db
+	return dataAccessManager.db
 }
 
 func Cleanup() error {
-	return db.Cleanup()
+	return dataAccessManager.db.Cleanup()
 }
