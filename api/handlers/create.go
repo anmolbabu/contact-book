@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	api_models "github.com/anmolbabu/contact-book/api/models"
 	"github.com/anmolbabu/contact-book/dao"
 	"github.com/anmolbabu/contact-book/models"
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,7 @@ func validateCreate(c *gin.Context) (httpStatusCode int, contact models.Contact,
 	var fetchedContact models.Contact
 	fetchedContact, err = daoInstance.Get(contact.EmailID)
 	if err == nil {
-		return http.StatusConflict, fetchedContact, fmt.Errorf("failed to create %+v as %+v already exists", ToContactResp(contact), ToContactResp(fetchedContact))
+		return http.StatusConflict, fetchedContact, fmt.Errorf("failed to create %+v as %+v already exists", api_models.ToContactResp(contact), api_models.ToContactResp(fetchedContact))
 	}
 
 	return http.StatusAccepted, contact, nil

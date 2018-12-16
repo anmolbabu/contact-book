@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
+	api_models "github.com/anmolbabu/contact-book/api/models"
 	"github.com/anmolbabu/contact-book/cb_errors"
 	"github.com/anmolbabu/contact-book/dao"
 	"github.com/anmolbabu/contact-book/models"
@@ -100,7 +101,7 @@ func (ch ContactHandler) GetAll(c *gin.Context) {
 		}
 	}
 
-	tcs := ToContactResps(contacts)
+	tcs := api_models.ToContactResps(contacts)
 	c.JSON(
 		http.StatusOK,
 		tcs,

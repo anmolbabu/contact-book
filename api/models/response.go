@@ -1,4 +1,4 @@
-package handlers
+package models
 
 import "github.com/anmolbabu/contact-book/models"
 

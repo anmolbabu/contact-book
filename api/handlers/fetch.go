@@ -3,6 +3,7 @@ package handlers
 import (
 	"sync"
 
+	"github.com/anmolbabu/contact-book/api/models"
 	"github.com/anmolbabu/contact-book/dao"
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ func (ch ContactHandler) Get(c *gin.Context) {
 
 	c.JSON(
 		200,
-		ToContactResp(contact),
+		models.ToContactResp(contact),
 	)
 	return
 }
